@@ -6,27 +6,27 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/JaneLiuL/fluentd-go/pkg/util"
+	"github.com/JaneLiuL/fluentd-go/pkg/plugin"
 )
 
 func main() {
 	// 创建Fluentd实例
-	fluent := util.NewFluentd()
+	fluent := plugin.NewFluentd()
 
 	// 设置队列连接各组件
-	inputQueue := util.NewQueue(1000)
-	filterQueue := util.NewQueue(1000)
-	outputQueue := util.NewQueue(1000)
+	inputQueue := plugin.NewQueue(1000)
+	filterQueue := plugin.NewQueue(1000)
+	outputQueue := plugin.NewQueue(1000)
 
 	// 添加输入插件
-	fileInput := util.NewTailInput("app.log", inputQueue, "/var/log/app.log", "app_log.pos")
-	tcpInput := util.NewTcpInput("network.log", inputQueue, "0.0.0.0:24224")
+	fileInput := plugin.NewTailInput("app.log", inputQueue, "/var/log/app.log", "app_log.pos")
+	tcpInput := plugin.NewTcpInput("network.log", inputQueue, "0.0.0.0:24224")
 	fluent.AddInput(fileInput)
 	fluent.AddInput(tcpInput)
 
 	// 添加过滤插件
-	grepFilter := util.NewGrepFilter(inputQueue, filterQueue, []string{"app.log", "network.log"}, "message", "error", false)
-	transformFilter := util.NewRecordTransformerFilter(filterQueue, outputQueue, []string{"app.log", "network.log"},
+	grepFilter := plugin.NewGrepFilter(inputQueue, filterQueue, []string{"app.log", "network.log"}, "message", "error", false)
+	transformFilter := plugin.NewRecordTransformerFilter(filterQueue, outputQueue, []string{"app.log", "network.log"},
 		map[string]interface{}{"environment": "production", "source": "fluentd-go"},
 		[]string{},
 	)
@@ -34,8 +34,8 @@ func main() {
 	fluent.AddFilter(transformFilter)
 
 	// 添加输出插件
-	stdoutOutput := util.NewStdoutOutput(outputQueue, []string{"app.log", "network.log"}, 10, 5)
-	fileOutput := util.NewFileOutput(outputQueue, []string{"app.log", "network.log"}, "/var/log/filtered_errors.log", 10, 5)
+	stdoutOutput := plugin.NewStdoutOutput(outputQueue, []string{"app.log", "network.log"}, 10, 5)
+	fileOutput := plugin.NewFileOutput(outputQueue, []string{"app.log", "network.log"}, "/var/log/filtered_errors.log", 10, 5)
 	fluent.AddOutput(stdoutOutput)
 	fluent.AddOutput(fileOutput)
 
