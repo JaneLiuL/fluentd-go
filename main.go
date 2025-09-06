@@ -35,7 +35,7 @@ func main() {
 
 	// 添加输出插件
 	stdoutOutput := plugin.NewStdoutOutput(outputQueue, []string{"app.log", "network.log"}, 10, 5)
-	fileOutput := plugin.NewFileOutput(outputQueue, []string{"app.log", "network.log"}, "/var/log/filtered_errors.log", 10, 5)
+	fileOutput := plugin.NewFileOutput(outputQueue, []string{"app.log", "network.log"}, "/var/log/filtered_errors.log", 10, 5, true)
 	fluent.AddOutput(stdoutOutput)
 	fluent.AddOutput(fileOutput)
 

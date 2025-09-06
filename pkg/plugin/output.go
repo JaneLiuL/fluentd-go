@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"log"
 	"os"
@@ -197,15 +198,22 @@ func (s *StdoutOutput) Stop() {
 // FileOutput 输出到文件的插件
 type FileOutput struct {
 	*BaseOutput
-	path string
+	path        string
+	compression bool
 }
 
 // NewFileOutput 创建一个新的文件输出插件
-func NewFileOutput(inputQueue *Queue, matchTags []string, path string, bufferSize int, flushInterval int) *FileOutput {
-	return &FileOutput{
-		BaseOutput: NewBaseOutput(inputQueue, matchTags, bufferSize, time.Duration(flushInterval)*time.Second),
-		path:       path,
+func NewFileOutput(inputQueue *Queue, matchTags []string, path string, bufferSize int, flushInterval int, compression bool) *FileOutput {
+
+	if compression && filepath.Ext(path) != ".gz" {
+		path += ".gz"
 	}
+	fo := &FileOutput{
+		BaseOutput:  NewBaseOutput(inputQueue, matchTags, bufferSize, time.Duration(flushInterval)*time.Second),
+		path:        path,
+		compression: compression,
+	}
+	return fo
 }
 
 // Flush 刷新缓冲区，输出到文件
@@ -222,6 +230,20 @@ func (f *FileOutput) Flush(events []*Event) error {
 	}
 	defer file.Close()
 
+	var writer *gzip.Writer
+	var closeFunc func() error
+	if f.compression {
+		writer = gzip.NewWriter(file)
+		closeFunc = func() error {
+			if err := writer.Close(); err != nil {
+				return err
+			}
+			return file.Close()
+		}
+	} else {
+		closeFunc = file.Close
+	}
+
 	// 写入事件
 	for _, event := range events {
 		data, err := json.Marshal(map[string]interface{}{
@@ -234,12 +256,22 @@ func (f *FileOutput) Flush(events []*Event) error {
 			continue
 		}
 
-		if _, err := file.WriteString(string(data) + "\n"); err != nil {
-			log.Printf("Error writing to file: %v", err)
+		data = append(data, '\n') // 添加换行符
+
+		var writeErr error
+		if f.compression && writer != nil {
+			_, writeErr = writer.Write(data)
+		} else {
+			_, writeErr = file.Write(data)
+		}
+
+		if writeErr != nil {
+			log.Printf("Error writing to file: %v", writeErr)
 		}
 	}
 
-	return nil
+	// 关闭 writer
+	return closeFunc()
 }
 
 // Start 启动输出插件
