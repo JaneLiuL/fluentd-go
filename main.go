@@ -5,26 +5,28 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/JaneLiuL/fluentd-go/pkg/util"
 )
 
 func main() {
 	// 创建Fluentd实例
-	fluent := NewFluentd()
+	fluent := util.NewFluentd()
 
 	// 设置队列连接各组件
-	inputQueue := NewQueue(1000)
-	filterQueue := NewQueue(1000)
-	outputQueue := NewQueue(1000)
+	inputQueue := util.NewQueue(1000)
+	filterQueue := util.NewQueue(1000)
+	outputQueue := util.NewQueue(1000)
 
 	// 添加输入插件
-	fileInput := NewTailInput("app.log", inputQueue, "/var/log/app.log", "app_log.pos")
-	tcpInput := NewTcpInput("network.log", inputQueue, "0.0.0.0:24224")
+	fileInput := util.NewTailInput("app.log", inputQueue, "/var/log/app.log", "app_log.pos")
+	tcpInput := util.NewTcpInput("network.log", inputQueue, "0.0.0.0:24224")
 	fluent.AddInput(fileInput)
 	fluent.AddInput(tcpInput)
 
 	// 添加过滤插件
-	grepFilter := NewGrepFilter(inputQueue, filterQueue, []string{"app.log", "network.log"}, "message", "error", false)
-	transformFilter := NewRecordTransformerFilter(filterQueue, outputQueue, []string{"app.log", "network.log"},
+	grepFilter := util.NewGrepFilter(inputQueue, filterQueue, []string{"app.log", "network.log"}, "message", "error", false)
+	transformFilter := util.NewRecordTransformerFilter(filterQueue, outputQueue, []string{"app.log", "network.log"},
 		map[string]interface{}{"environment": "production", "source": "fluentd-go"},
 		[]string{},
 	)
@@ -32,8 +34,8 @@ func main() {
 	fluent.AddFilter(transformFilter)
 
 	// 添加输出插件
-	stdoutOutput := NewStdoutOutput(outputQueue, []string{"app.log", "network.log"}, 10, 5)
-	fileOutput := NewFileOutput(outputQueue, []string{"app.log", "network.log"}, "/var/log/filtered_errors.log", 10, 5)
+	stdoutOutput := util.NewStdoutOutput(outputQueue, []string{"app.log", "network.log"}, 10, 5)
+	fileOutput := util.NewFileOutput(outputQueue, []string{"app.log", "network.log"}, "/var/log/filtered_errors.log", 10, 5)
 	fluent.AddOutput(stdoutOutput)
 	fluent.AddOutput(fileOutput)
 
