@@ -195,14 +195,12 @@ func (s *StdoutOutput) Stop() {
 	log.Println("Stopped StdoutOutput")
 }
 
-// FileOutput 输出到文件的插件
 type FileOutput struct {
 	*BaseOutput
 	path        string
 	compression bool
 }
 
-// NewFileOutput 创建一个新的文件输出插件
 func NewFileOutput(inputQueue *Queue, matchTags []string, path string, bufferSize int, flushInterval int, compression bool) *FileOutput {
 
 	if compression && filepath.Ext(path) != ".gz" {
@@ -274,7 +272,6 @@ func (f *FileOutput) Flush(events []*Event) error {
 	return closeFunc()
 }
 
-// Start 启动输出插件
 func (f *FileOutput) Start() {
 	if f.IsRunning() {
 		return
@@ -331,7 +328,6 @@ func (f *FileOutput) Start() {
 	}()
 }
 
-// Stop 停止输出插件
 func (f *FileOutput) Stop() {
 	if !f.IsRunning() {
 		return

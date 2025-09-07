@@ -23,6 +23,8 @@ type BaseFilter struct {
 	wg          sync.WaitGroup
 }
 
+// type FilterRule
+
 // NewBaseFilter 创建一个新的基础过滤插件
 func NewBaseFilter(inputQueue, outputQueue *Queue, matchTags []string) *BaseFilter {
 	return &BaseFilter{

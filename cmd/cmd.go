@@ -12,8 +12,10 @@ import (
 )
 
 var (
-	inputFile string
-	netAdress string
+	inputFile     string
+	netAdress     string
+	outputFile    string
+	filterKeyWord string
 )
 
 func NewRootCommand() *cobra.Command {
@@ -28,15 +30,25 @@ func NewRootCommand() *cobra.Command {
 			if netAdress == "" {
 				fmt.Println("please use --address or -a")
 			}
-			run(inputFile, netAdress)
+			if outputFile == "" {
+				fmt.Println("please use --outputFile or -o")
+			}
+			if filterKeyWord == "" {
+				fmt.Println("please use --filterKeyWord or -f")
+			}
+
+			run(inputFile, netAdress, outputFile, filterKeyWord)
 		},
 	}
-	rootCmd.Flags().StringVarP(&inputFile, "input", "i", "/var/log/app.log", "intput file name")
-	rootCmd.Flags().StringVarP(&netAdress, "address", "a", "0.0.0.0:24224", "network address")
+	rootCmd.Flags().StringVarP(&inputFile, "input", "i", "/tmp/app.log", "intput file name")
+	rootCmd.Flags().StringVarP(&netAdress, "address", "a", "0.0.0.0:24224", "input network address reading from connection")
+	rootCmd.Flags().StringVarP(&outputFile, "output", "o", "/tmp/filtered_errors.log", "output file name")
+	rootCmd.Flags().StringVarP(&filterKeyWord, "filterKeyWord", "f", "Sender", "filter key word")
+
 	return rootCmd
 }
 
-func run(inputFile, netAdress string) {
+func run(inputFile, netAdress, outputFile, filterKeyWord string) {
 	// 创建Fluentd实例
 	fluent := plugin.NewFluentd()
 
@@ -52,7 +64,7 @@ func run(inputFile, netAdress string) {
 	fluent.AddInput(tcpInput)
 
 	// 添加过滤插件
-	grepFilter := plugin.NewGrepFilter(inputQueue, filterQueue, []string{"app.log", "network.log"}, "message", "error", false)
+	grepFilter := plugin.NewGrepFilter(inputQueue, filterQueue, []string{"app.log", "network.log"}, "message", filterKeyWord, false)
 	transformFilter := plugin.NewRecordTransformerFilter(filterQueue, outputQueue, []string{"app.log", "network.log"},
 		map[string]interface{}{"environment": "production", "source": "fluentd-go"},
 		[]string{},
@@ -62,7 +74,7 @@ func run(inputFile, netAdress string) {
 
 	// 添加输出插件
 	stdoutOutput := plugin.NewStdoutOutput(outputQueue, []string{"app.log", "network.log"}, 10, 5)
-	fileOutput := plugin.NewFileOutput(outputQueue, []string{"app.log", "network.log"}, "/var/log/filtered_errors.log", 10, 5, true)
+	fileOutput := plugin.NewFileOutput(outputQueue, []string{"app.log", "network.log"}, outputFile, 10, 5, true)
 	fluent.AddOutput(stdoutOutput)
 	fluent.AddOutput(fileOutput)
 
