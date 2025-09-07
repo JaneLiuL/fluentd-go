@@ -21,7 +21,6 @@ type FileEvent struct {
 	Type FileEventType
 }
 
-// FileObserver 用于监控文件变化
 type FileObserver struct {
 	path     string
 	callback func(FileEvent)
@@ -86,7 +85,6 @@ func (f *FileObserver) scan() {
 	}
 }
 
-// Start 启动文件观察器
 func (f *FileObserver) Start() {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -117,7 +115,6 @@ func (f *FileObserver) Start() {
 	}()
 }
 
-// Stop 停止文件观察器
 func (f *FileObserver) Stop() {
 	f.mu.Lock()
 	defer f.mu.Unlock()

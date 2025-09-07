@@ -17,7 +17,7 @@ type FilterPlugin interface {
 type BaseFilter struct {
 	inputQueue  *Queue
 	outputQueue *Queue
-	matchTags   string
+	matchTags   []string
 	running     bool
 	mu          sync.Mutex
 	wg          sync.WaitGroup
@@ -142,11 +142,11 @@ func trimQuotes(s string) string {
 }
 **/
 // NewBaseFilter 创建一个新的基础过滤插件
-func NewBaseFilter(inputQueue, outputQueue *Queue, matchTag string) *BaseFilter {
+func NewBaseFilter(inputQueue, outputQueue *Queue, matchTags []string) *BaseFilter {
 	return &BaseFilter{
 		inputQueue:  inputQueue,
 		outputQueue: outputQueue,
-		matchTags:   matchTag,
+		matchTags:   matchTags,
 		running:     false,
 	}
 }
@@ -167,20 +167,20 @@ func (f *BaseFilter) SetRunning(running bool) {
 
 // Matches 检查事件标签是否匹配
 func (f *BaseFilter) Matches(tag string) bool {
-	// for _, pattern := range f.matchTags {
-	// 简单的通配符匹配，*匹配任意字符
-	// if f.matchTags == "*" {
-	// 	return true
-	// }
-	// if pattern[len(pattern)-1] == '*' && len(tag) >= len(pattern)-1 &&
-	// 	tag[:len(pattern)-1] == pattern[:len(pattern)-1] {
-	// 	return true
-	// }
-	// if tag == pattern {
-	// 	return true
-	// }
-	// }
-	return true
+	for _, pattern := range f.matchTags {
+		// 简单的通配符匹配，*匹配任意字符
+		if pattern == "*" {
+			return true
+		}
+		if pattern[len(pattern)-1] == '*' && len(tag) >= len(pattern)-1 &&
+			tag[:len(pattern)-1] == pattern[:len(pattern)-1] {
+			return true
+		}
+		if tag == pattern {
+			return true
+		}
+	}
+	return false
 }
 
 // GrepFilter 基于正则表达式过滤事件
@@ -192,9 +192,9 @@ type GrepFilter struct {
 }
 
 // NewGrepFilter 创建一个新的Grep过滤插件
-func NewGrepFilter(inputQueue, outputQueue *Queue, matchTag string, key, pattern string, exclude bool) *GrepFilter {
+func NewGrepFilter(inputQueue, outputQueue *Queue, matchTags []string, key, pattern string, exclude bool) *GrepFilter {
 	return &GrepFilter{
-		BaseFilter: NewBaseFilter(inputQueue, outputQueue, matchTag),
+		BaseFilter: NewBaseFilter(inputQueue, outputQueue, matchTags),
 		key:        key,
 		pattern:    regexp.MustCompile(pattern),
 		exclude:    exclude,
@@ -275,7 +275,7 @@ type RecordTransformerFilter struct {
 }
 
 // NewRecordTransformerFilter 创建一个新的记录转换过滤插件
-func NewRecordTransformerFilter(inputQueue, outputQueue *Queue, matchTags string, addFields map[string]interface{}, removeFields []string) *RecordTransformerFilter {
+func NewRecordTransformerFilter(inputQueue, outputQueue *Queue, matchTags []string, addFields map[string]interface{}, removeFields []string) *RecordTransformerFilter {
 	return &RecordTransformerFilter{
 		BaseFilter:   NewBaseFilter(inputQueue, outputQueue, matchTags),
 		addFields:    addFields,

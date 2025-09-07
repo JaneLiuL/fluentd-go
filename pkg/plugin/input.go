@@ -11,13 +11,11 @@ import (
 	"time"
 )
 
-// InputPlugin 输入插件接口
 type InputPlugin interface {
 	Start()
 	Stop()
 }
 
-// BaseInput 输入插件基类
 type BaseInput struct {
 	tag         string
 	outputQueue *Queue
@@ -26,7 +24,6 @@ type BaseInput struct {
 	wg          sync.WaitGroup
 }
 
-// NewBaseInput 创建一个新的基础输入插件
 func NewBaseInput(tag string, outputQueue *Queue) *BaseInput {
 	return &BaseInput{
 		tag:         tag,
@@ -35,21 +32,18 @@ func NewBaseInput(tag string, outputQueue *Queue) *BaseInput {
 	}
 }
 
-// IsRunning 检查插件是否在运行
 func (i *BaseInput) IsRunning() bool {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	return i.running
 }
 
-// SetRunning 设置插件运行状态
 func (i *BaseInput) SetRunning(running bool) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	i.running = running
 }
 
-// TailInput 文件尾输入插件，监控文件变化并读取新内容
 type TailInput struct {
 	*BaseInput
 	path      string
@@ -58,7 +52,6 @@ type TailInput struct {
 	observer  *FileObserver
 }
 
-// NewTailInput 创建一个新的文件尾输入插件
 func NewTailInput(tag string, outputQueue *Queue, path, posFile string) *TailInput {
 	input := &TailInput{
 		BaseInput: NewBaseInput(tag, outputQueue),
@@ -67,10 +60,8 @@ func NewTailInput(tag string, outputQueue *Queue, path, posFile string) *TailInp
 		positions: make(map[string]int64),
 	}
 
-	// 加载文件位置记录
 	input.loadPositions()
 
-	// 创建文件观察器
 	input.observer = NewFileObserver(filepath.Dir(path), func(event FileEvent) {
 		if event.Path == path && event.Type == FileEventModify {
 			input.readNewContent()
@@ -80,7 +71,6 @@ func NewTailInput(tag string, outputQueue *Queue, path, posFile string) *TailInp
 	return input
 }
 
-// 加载文件读取位置
 func (t *TailInput) loadPositions() {
 	if _, err := os.Stat(t.posFile); err == nil {
 		data, err := os.ReadFile(t.posFile)
@@ -89,13 +79,11 @@ func (t *TailInput) loadPositions() {
 		}
 	}
 
-	// 确保当前文件有位置记录
 	if _, exists := t.positions[t.path]; !exists {
 		t.positions[t.path] = 0
 	}
 }
 
-// 保存文件读取位置
 func (t *TailInput) savePositions() {
 	data, err := json.Marshal(t.positions)
 	if err != nil {
@@ -103,7 +91,6 @@ func (t *TailInput) savePositions() {
 		return
 	}
 
-	// 创建目录（如果需要）
 	if err := os.MkdirAll(filepath.Dir(t.posFile), 0755); err != nil {
 		log.Printf("Error creating pos file directory: %v", err)
 		return
@@ -114,7 +101,6 @@ func (t *TailInput) savePositions() {
 	}
 }
 
-// 读取文件新内容
 func (t *TailInput) readNewContent() {
 	file, err := os.Open(t.path)
 	if err != nil {
@@ -159,7 +145,6 @@ func (t *TailInput) readNewContent() {
 	}
 }
 
-// Start 启动输入插件
 func (t *TailInput) Start() {
 	if t.IsRunning() {
 		return
@@ -172,23 +157,18 @@ func (t *TailInput) Start() {
 		defer t.BaseInput.wg.Done()
 		log.Printf("Starting TailInput for %s with tag %s", t.path, t.tag)
 
-		// 初始读取
 		t.readNewContent()
 
-		// 启动文件观察器
 		t.observer.Start()
 
-		// 保持运行
 		for t.IsRunning() {
 			time.Sleep(1 * time.Second)
 		}
 
-		// 停止观察器
 		t.observer.Stop()
 	}()
 }
 
-// Stop 停止输入插件
 func (t *TailInput) Stop() {
 	if !t.IsRunning() {
 		return
@@ -237,7 +217,6 @@ func (t *TcpInput) handleClient(conn net.Conn) {
 	log.Printf("Connection from %s closed", conn.RemoteAddr())
 }
 
-// Start 启动输入插件
 func (t *TcpInput) Start() {
 	if t.IsRunning() {
 		return
@@ -274,7 +253,6 @@ func (t *TcpInput) Start() {
 	}()
 }
 
-// Stop 停止输入插件
 func (t *TcpInput) Stop() {
 	if !t.IsRunning() {
 		return

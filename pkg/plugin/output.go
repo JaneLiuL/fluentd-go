@@ -10,16 +10,14 @@ import (
 	"time"
 )
 
-// OutputPlugin 输出插件接口
 type OutputPlugin interface {
 	Start()
 	Stop()
 }
 
-// BaseOutput 输出插件基类
 type BaseOutput struct {
 	inputQueue    *Queue
-	matchTags     []string
+	matchTags     string
 	bufferSize    int
 	flushInterval time.Duration
 	buffer        []*Event
@@ -29,8 +27,7 @@ type BaseOutput struct {
 	lastFlush     time.Time
 }
 
-// NewBaseOutput 创建一个新的基础输出插件
-func NewBaseOutput(inputQueue *Queue, matchTags []string, bufferSize int, flushInterval time.Duration) *BaseOutput {
+func NewBaseOutput(inputQueue *Queue, matchTags string, bufferSize int, flushInterval time.Duration) *BaseOutput {
 	return &BaseOutput{
 		inputQueue:    inputQueue,
 		matchTags:     matchTags,
@@ -42,37 +39,35 @@ func NewBaseOutput(inputQueue *Queue, matchTags []string, bufferSize int, flushI
 	}
 }
 
-// IsRunning 检查插件是否在运行
 func (o *BaseOutput) IsRunning() bool {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 	return o.running
 }
 
-// SetRunning 设置插件运行状态
 func (o *BaseOutput) SetRunning(running bool) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 	o.running = running
 }
 
-// Matches 检查事件标签是否匹配
 func (o *BaseOutput) Matches(tag string) bool {
-	for _, pattern := range o.matchTags {
-		// 简单的通配符匹配，*匹配任意字符
-		if pattern == "*" {
-			return true
-		}
-		if pattern[len(pattern)-1] == '*' && len(tag) >= len(pattern)-1 &&
-			tag[:len(pattern)-1] == pattern[:len(pattern)-1] {
-			return true
-			return true
-		}
-		if tag == pattern {
-			return true
-		}
-	}
-	return false
+	// for _, pattern := range o.matchTags {
+	// 	// 简单的通配符匹配，*匹配任意字符
+	// 	if pattern == "*" {
+	// 		return true
+	// 	}
+	// 	if pattern[len(pattern)-1] == '*' && len(tag) >= len(pattern)-1 &&
+	// 		tag[:len(pattern)-1] == pattern[:len(pattern)-1] {
+	// 		return true
+	// 		return true
+	// 	}
+	// 	if tag == pattern {
+	// 		return true
+	// 	}
+	// }
+	// return false
+	return true
 }
 
 // AddToBuffer 将事件添加到缓冲区
@@ -113,7 +108,7 @@ type StdoutOutput struct {
 }
 
 // NewStdoutOutput 创建一个新的标准输出插件
-func NewStdoutOutput(inputQueue *Queue, matchTags []string, bufferSize int, flushInterval int) *StdoutOutput {
+func NewStdoutOutput(inputQueue *Queue, matchTags string, bufferSize int, flushInterval int) *StdoutOutput {
 	return &StdoutOutput{
 		BaseOutput: NewBaseOutput(inputQueue, matchTags, bufferSize, time.Duration(flushInterval)*time.Second),
 	}
@@ -127,7 +122,6 @@ func (s *StdoutOutput) Flush(events []*Event) error {
 	return nil
 }
 
-// Start 启动输出插件
 func (s *StdoutOutput) Start() {
 	if s.IsRunning() {
 		return
@@ -184,7 +178,6 @@ func (s *StdoutOutput) Start() {
 	}()
 }
 
-// Stop 停止输出插件
 func (s *StdoutOutput) Stop() {
 	if !s.IsRunning() {
 		return
@@ -201,11 +194,28 @@ type FileOutput struct {
 	compression bool
 }
 
-func NewFileOutput(inputQueue *Queue, matchTags []string, path string, bufferSize int, flushInterval int, compression bool) *FileOutput {
+func NewFileOutput(inputQueue *Queue, matchTags string, path string, bufferSize int, flushInterval int, compression bool) *FileOutput {
 
 	if compression && filepath.Ext(path) != ".gz" {
 		path += ".gz"
 	}
+
+	// TODO
+	// _, err := os.Stat(path)
+	// if os.IsNotExist(err) {
+	// 	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0644)
+	// 	if err != nil {
+
+	// 		log.Fatal("cannot create file: %v", err)
+	// 	}
+	// 	defer file.Close()
+	// 	log.Println("file '%s' already create\n", path)
+	// 	return nil
+	// } else if err != nil {
+	// 	// 其他错误
+	// 	log.Fatal("check file error: %v", err)
+	// }
+
 	fo := &FileOutput{
 		BaseOutput:  NewBaseOutput(inputQueue, matchTags, bufferSize, time.Duration(flushInterval)*time.Second),
 		path:        path,

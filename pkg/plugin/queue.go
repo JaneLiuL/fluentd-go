@@ -10,7 +10,6 @@ type Queue struct {
 	closed   bool
 }
 
-// NewQueue 创建一个新的队列
 func NewQueue(capacity int) *Queue {
 	return &Queue{
 		ch:       make(chan *Event, capacity),
@@ -19,7 +18,6 @@ func NewQueue(capacity int) *Queue {
 	}
 }
 
-// Put 将事件放入队列
 func (q *Queue) Put(event *Event) bool {
 	q.mu.Lock()
 	defer q.mu.Unlock()
@@ -37,7 +35,6 @@ func (q *Queue) Put(event *Event) bool {
 	}
 }
 
-// Get 从队列获取事件
 func (q *Queue) Get() (*Event, bool) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
@@ -54,7 +51,6 @@ func (q *Queue) Get() (*Event, bool) {
 	}
 }
 
-// Close 关闭队列
 func (q *Queue) Close() {
 	q.mu.Lock()
 	defer q.mu.Unlock()
@@ -65,7 +61,6 @@ func (q *Queue) Close() {
 	}
 }
 
-// Len 返回队列中事件的数量
 func (q *Queue) Len() int {
 	return len(q.ch)
 }

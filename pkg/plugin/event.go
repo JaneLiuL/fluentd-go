@@ -4,14 +4,14 @@ import (
 	"time"
 )
 
-// Event 表示一个日志事件
+// a log event
 type Event struct {
 	Tag       string
 	Timestamp time.Time
 	Record    map[string]interface{}
 }
 
-// NewEvent 创建一个新的事件
+// NewEvent create a new event
 func NewEvent(tag string, record map[string]interface{}) *Event {
 	return &Event{
 		Tag:       tag,

@@ -1,0 +1,44 @@
+inputs:
+  - type: file
+    path: /tmp/app.log
+    tag: application
+    format: json
+  - type: file
+    path: /tmp/system.log
+    tag: system
+    format: text
+  - type: tcp
+    address: "0.0.0.0:24224"
+    tag: network
+    format: regex
+
+filters:
+  - type: match
+    tag: application
+    pattern: "error"
+
+  - type: exclude
+    tag: system
+    pattern: "kernel"
+  # - type: match
+  #   tag: application
+  #   match:
+  #     response_time: ">1.0"
+  # - type: match
+  #   tag: network
+  #   match:
+  #     message: "~error|failed|critical"
+
+output:
+  - type: stdout
+    tag: application
+    compression: false
+    
+  - type: file
+    path: /tmp/filtered/errors.log
+    tag: application  # 只处理应用日志
+    compression: false
+    
+  # - type: elasticsearch
+  #   address: http://localhost:9200
+  #   tag: ""  # 所有日志都发送到ES
